@@ -18,6 +18,8 @@ $(document).ready(function() {
   var width = window.innerWidth - 10;
   var height = window.innerHeight - 10;
   
+
+
   canvas.style.width = (width+1) + "px";
   canvas.style.height = (height+1) + "px";
   
@@ -43,9 +45,14 @@ $(document).ready(function() {
      	,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
       ,  b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
       ;
-         
+     
+
+
+      //create world and gravity
+     var GRAVITY = 30;
+     var gravity = new b2Vec2(0, GRAVITY);
      var world = new b2World(
-           new b2Vec2(0, 30)    //gravity
+           gravity    //gravity
         ,  true                 //allow sleep
      );
     
@@ -138,6 +145,7 @@ $(document).ready(function() {
 
       selectedBody = null;
       world.QueryAABB(getBodyCB, aabb);
+      console.debug(selectedBody);
       return selectedBody;
     }
      
@@ -210,8 +218,51 @@ $(document).ready(function() {
 
         return {x: x, y: y};
      }
+     function wakeAllBody() {
+         for (b = world.GetBodyList() ; b; b = b.GetNext()) {
+             if (b.GetType() == b2Body.b2_dynamicBody) {
+                 b.SetAwake(true);
+             }
+         }
+     }
+     // Defines the direction of gravity
+     function setGravity(direction) {
+         if (direction === "UP") {
+             gravity.y = -GRAVITY;
+             gravity.x = 0;
+         }
+         else if (direction === "DOWN") {
+             gravity.y = GRAVITY;
+             gravity.x = 0;
+         }
+         else if (direction === "LEFT") {
+             gravity.x = -GRAVITY;
+             gravity.y = 0;
+         }
+         else if (direction === "RIGHT") {
+             gravity.x = GRAVITY;
+             gravity.y = 0;
+         }
 
+     }
 
+     
+     $("#gravityRight").click(function () {
+         wakeAllBody();
+         setGravity("RIGHT");
+     });
+     $("#gravityLeft").click(function () {
+         wakeAllBody();
+         setGravity("LEFT");
+     });
+     $("#gravityUp").click(function () {
+         wakeAllBody();
+         setGravity("UP");
+     });
+     $("#gravityDown").click(function () {
+         wakeAllBody();
+         setGravity("DOWN");
+     });
   };
   
   
