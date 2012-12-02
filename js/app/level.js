@@ -4,7 +4,8 @@ var Level = function (game, levelData) {
   this.playerPosition = levelData.player;
   this.goalPosition = levelData.goal;
   this.img = new Image();
-  this.imgUrl = "http://placehold.it/100x100";
+  //this.imgUrl = "http://placehold.it/100x100";
+  this.imgUrl = "img/square.png";
   this.img.src = this.imgUrl;
 }
 
@@ -41,13 +42,17 @@ Level.prototype.draw = function () {
     //console.log("game.canvasWidth: "+game.canvasWidth);
     //console.log("objWidth: "+objWidth);
     //console.log("objHeight: "+objHeight);
+    var imgUrl;
     if(Math.random() > 0.5) {
+      //imgUrl = "http://placehold.it/"+(objWidth*game.STAGE_SCALE)+"x"+(objHeight*game.STAGE_SCALE);
+      imgUrl = "img/square.png";
       game.fixDef.shape = new b2PolygonShape;
       game.fixDef.shape.SetAsBox(
           objWidth/2 //half width
         , objHeight/2 //half height
       );
     } else {
+      imgUrl = "img/round.png";
       game.fixDef.shape = new b2CircleShape(
         objWidth/2 //radius
       );
@@ -58,8 +63,6 @@ Level.prototype.draw = function () {
     bd = game.world.CreateBody(game.bodyDef);
     
     var img = new Image();
-    var imgUrl;
-    imgUrl = "http://placehold.it/"+(objWidth*game.STAGE_SCALE)+"x"+(objHeight*game.STAGE_SCALE);
     img.src = imgUrl;
     var data = {
       id: i,
