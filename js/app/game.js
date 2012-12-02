@@ -10,7 +10,6 @@ window.requestAnimFrame = (function(){
     })();
 
 
-console.log("ready");
 var world;
 var canvas;
 var context;
@@ -427,7 +426,8 @@ function init() {
      setGravity("DOWN");
   });
 };
-  
+
+
 // $(document).bind("keydown", function (event) { console.log(event.keyCode); });
 var Keys = {
   LEFT: 37,
