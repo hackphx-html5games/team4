@@ -1,29 +1,17 @@
-window.requestAnimFrame = (function(){
-          return  window.requestAnimationFrame       || 
-                  window.webkitRequestAnimationFrame || 
-                  window.mozRequestAnimationFrame    || 
-                  window.oRequestAnimationFrame      || 
-                  window.msRequestAnimationFrame     || 
-                  function(/* function */ callback, /* DOMElement */ element){
-                    window.setTimeout(callback, 1000 / 60);
-                  };
-    })();
+var Game = function (el) {
+  this.el = el;
+  this.GRAVITY = 30;
+  this.STAGE_SCALE = 10;
+}
 
 
-var world;
-var canvas;
-var context;
-var canvasWidth;
-var canvasHeight;
-var thePlayer = false;
+var lastPlayerContact = Date.now();
 var globalRestitution = 0.2;
+var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint, movementJoint;
 
-var stageScale = 10;
-
-var world;
-
-var   b2Vec2 = Box2D.Common.Math.b2Vec2
- ,  b2AABB = Box2D.Collision.b2AABB
+var thePlayer = false;
+var b2Vec2 = Box2D.Common.Math.b2Vec2
+  , b2AABB = Box2D.Collision.b2AABB
 	,	b2BodyDef = Box2D.Dynamics.b2BodyDef
 	,	b2Body = Box2D.Dynamics.b2Body
 	,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
@@ -37,30 +25,32 @@ var   b2Vec2 = Box2D.Common.Math.b2Vec2
  , b2JointDef = Box2D.Dynamics.Joints.b2JointDef
  ;
 
-var GRAVITY = 30;
-var gravity = new b2Vec2(0, GRAVITY);
 
-function init() {
-  canvasWidth = window.innerWidth - 10;
-  canvasHeight = window.innerHeight - 10;
+Game.prototype.setup = function () {
+  var game = this;
   
-  canvas = document.getElementById("game-canvas");
-  context = canvas.getContext("2d");
+  //game.player = new Player();
+  
+  game.canvasWidth = window.innerWidth - 10;
+  game.canvasHeight = window.innerHeight - 10;
+  //console.log("window.innerWidth - 10: "+String(window.innerWidth - 10));
+  game.canvas = document.getElementById(game.el);
+  game.context = game.canvas.getContext("2d");
+  
+  game.canvas.style.width = (game.canvasWidth+1) + "px";
+  game.canvas.style.height = (game.canvasHeight+1) + "px";
     
-  canvas.style.width = (canvasWidth+1) + "px";
-  canvas.style.height = (canvasHeight+1) + "px";
-    
-  canvas.setAttribute("width", canvasWidth+1);
-  canvas.setAttribute("height", canvasHeight+1);
-         
-  canvasWidth /= stageScale;
-  canvasHeight /= stageScale;
+  game.canvas.setAttribute("width", game.canvasWidth+1);
+  game.canvas.setAttribute("height", game.canvasHeight+1);
+  
+  game.canvasWidth /= game.STAGE_SCALE;
+  game.canvasHeight /= game.STAGE_SCALE;
+  //console.log("game.canvasWidth: "+game.canvasWidth);
   
   //create world and gravity
-  GRAVITY = 30;
-  gravity = new b2Vec2(0, GRAVITY);
-  world = new b2World(
-    gravity    //gravity
+  game.gravity = new b2Vec2(0, game.GRAVITY);
+  game.world = new b2World(
+    game.gravity    //gravity
     ,  true                 //allow sleep
   );
   
@@ -74,24 +64,28 @@ function init() {
   //create ground
   bodyDef.type = b2Body.b2_staticBody;
   fixDef.shape = new b2PolygonShape;
-  fixDef.shape.SetAsBox(canvasWidth, canvasHeight*.01);
-  bodyDef.position.Set(canvasWidth*.01, canvasHeight);
-  world.CreateBody(bodyDef).CreateFixture(fixDef);
-  bodyDef.position.Set(canvasWidth, canvasHeight*.01);
-  world.CreateBody(bodyDef).CreateFixture(fixDef);
-  fixDef.shape.SetAsBox(canvasWidth*.01, canvasHeight);
-  bodyDef.position.Set(canvasWidth*.01, canvasHeight);
-  world.CreateBody(bodyDef).CreateFixture(fixDef);
-  bodyDef.position.Set(canvasWidth, canvasHeight);
-  world.CreateBody(bodyDef).CreateFixture(fixDef);
+  fixDef.shape.SetAsBox(game.canvasWidth, game.canvasHeight*.01);
+  bodyDef.position.Set(game.canvasWidth*.01, game.canvasHeight);
+  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
+  bodyDef.position.Set(game.canvasWidth, game.canvasHeight*.01);
+  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
+  fixDef.shape.SetAsBox(game.canvasWidth*.01, game.canvasHeight);
+  bodyDef.position.Set(game.canvasWidth*.01, game.canvasHeight);
+  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
+  bodyDef.position.Set(game.canvasWidth, game.canvasHeight);
+  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
     
   //create some objects
   bodyDef.type = b2Body.b2_dynamicBody;
   var objects = [];
   window.objects = objects;
   for(var i = 0; i < 10; ++i) {
-    objWidth = Math.round(canvasWidth*.1 * (Math.random() + 0.1));
-    objHeight = Math.round(canvasWidth*.1 * (Math.random() + 0.1));
+    objWidth = Math.round(game.canvasWidth*.1 * (Math.random() + 0.1));
+    objHeight = Math.round(game.canvasWidth*.1 * (Math.random() + 0.1));
+    
+    //console.log("game.canvasWidth: "+game.canvasWidth);
+    //console.log("objWidth: "+objWidth);
+    //console.log("objHeight: "+objHeight);
     if(Math.random() > 0.5) {
       fixDef.shape = new b2PolygonShape;
       fixDef.shape.SetAsBox(
@@ -104,9 +98,9 @@ function init() {
       );
       objHeight = objWidth;
     }
-    bodyDef.position.x = Math.random() * canvasWidth;
-    bodyDef.position.y = canvasHeight*.1 + Math.random() * canvasHeight*.4;
-    bd = world.CreateBody(bodyDef);
+    bodyDef.position.x = Math.random() * game.canvasWidth;
+    bodyDef.position.y = game.canvasHeight*.1 + Math.random() * game.canvasHeight*.4;
+    bd = game.world.CreateBody(bodyDef);
     
     var img = new Image();
     var imgUrl;
@@ -114,7 +108,8 @@ function init() {
       imgUrl = "8bit-stache.jpg";
       thePlayer = bd;
     } else {
-      imgUrl = "http://placehold.it/"+(objWidth*stageScale)+"x"+(objHeight*stageScale);
+      //console.log("Scale: "+game.STAGE_SCALE);
+      imgUrl = "http://placehold.it/"+(objWidth*game.STAGE_SCALE)+"x"+(objHeight*game.STAGE_SCALE);
     }
     img.src = imgUrl;
     var data = {
@@ -141,40 +136,40 @@ function init() {
       f.SetRestitution(globalRestitution);
     }
   }
-    
+  
   //setup debug draw
   var debugDraw = new b2DebugDraw();
-	debugDraw.SetSprite(context);
-	debugDraw.SetDrawScale(stageScale);
+	debugDraw.SetSprite(game.context);
+	debugDraw.SetDrawScale(game.STAGE_SCALE);
 	debugDraw.SetFillAlpha(0.5);
 	debugDraw.SetLineThickness(1.0);
 	debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
-	world.SetDebugDraw(debugDraw);
-    
-  //window.setInterval(update, 1000 / 60);
-  requestAnimFrame(update);
-    
-  //mouse
-    
-  var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint, movementJoint;
-  var canvasPosition = getElementPosition(canvas);
-    
+	game.world.SetDebugDraw(debugDraw);
+  
+  game.canvasPosition = getElementPosition(game.canvas);
+  
   document.addEventListener("mousedown", function(e) {
     isMouseDown = true;
     handleMouseMove(e);
     document.addEventListener("mousemove", handleMouseMove, true);
   }, true);
          
-   document.addEventListener("mouseup", function() {
-      document.removeEventListener("mousemove", handleMouseMove, true);
-      isMouseDown = false;
-      mouseX = undefined;
-      mouseY = undefined;
-   }, true);
+  document.addEventListener("mouseup", function() {
+    document.removeEventListener("mousemove", handleMouseMove, true);
+    isMouseDown = false;
+    mouseX = undefined;
+    mouseY = undefined;
+  }, true);
+  
+  
+  
+  
+  
+  
   
   function handleMouseMove(e) {
-    mouseX = (e.clientX - canvasPosition.x) / stageScale;
-    mouseY = (e.clientY - canvasPosition.y) / stageScale;
+    mouseX = (e.clientX - game.canvasPosition.x) / game.STAGE_SCALE;
+    mouseY = (e.clientY - game.canvasPosition.y) / game.STAGE_SCALE;
   };
   
   function getBodyAtMouse() {
@@ -186,7 +181,7 @@ function init() {
     // Query the world for overlapping shapes.
     
     selectedBody = null;
-    world.QueryAABB(getBodyCB, aabb);
+    game.world.QueryAABB(getBodyCB, aabb);
     return selectedBody;
   }
   
@@ -194,7 +189,7 @@ function init() {
     if (thePlayer) {
       return thePlayer;
     }
-    for (b = world.GetBodyList(); b; b = b.GetNext()) {
+    for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
       if (b.GetType() == b2Body.b2_dynamicBody) {
         var pos = b.GetPosition();
         var data = b.GetUserData();
@@ -205,7 +200,6 @@ function init() {
     }
   }
   
-  var lastPlayerContact = Date.now();
   function playerIsTouching () {
     return lastPlayerContact > Date.now()-200;
   }
@@ -224,13 +218,9 @@ function init() {
           lastPlayerContact = Date.now();
         }
       }
-      //count++;
       contacts = contacts.next;
     }
-    
-    //console.log("Count: "+count);
   }
-  //setInterval(getPlayerContacts, 200);
   
   function getBodyCB(fixture) {
     if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
@@ -241,8 +231,6 @@ function init() {
     }
     return true;
   }
-    
-  //update
     
   function move(dir) {
     getPlayerContacts();
@@ -285,7 +273,7 @@ function init() {
     player.SetAngle(0);
     
     if (movementJoint) {
-      world.DestroyJoint(movementJoint);
+      game.world.DestroyJoint(movementJoint);
       movementJoint = null;
     }
       
@@ -296,7 +284,7 @@ function init() {
       move("right");
     } else {
       if (movementJoint) {
-        world.DestroyJoint(movementJoint);
+        game.world.DestroyJoint(movementJoint);
         movementJoint = null;
       }
     }
@@ -305,12 +293,12 @@ function init() {
       var body = getBodyAtMouse();
       if(body) {
         var md = new b2MouseJointDef();
-        md.bodyA = world.GetGroundBody();
+        md.bodyA = game.world.GetGroundBody();
         md.bodyB = body;
         md.target.Set(mouseX, mouseY);
         md.collideConnected = true;
         md.maxForce = 500.0 * body.GetMass();
-        mouseJoint = world.CreateJoint(md);
+        mouseJoint = game.world.CreateJoint(md);
         body.SetAwake(true);
       }
     }
@@ -319,18 +307,17 @@ function init() {
       if (isMouseDown) {
         mouseJoint.SetTarget(new b2Vec2(mouseX, mouseY));
       } else {
-        world.DestroyJoint(mouseJoint);
+        game.world.DestroyJoint(mouseJoint);
         mouseJoint = null;
       }
     }
     
-    window.world = world;
-    world.Step(1 / 60, 10, 10);
-    world.DrawDebugData();
-    world.ClearForces();
+    game.world.Step(1 / 60, 10, 10);
+    game.world.DrawDebugData();
+    game.world.ClearForces();
     
-    //context.clearRect(0, 0, canvasWidth*stageScale+1, canvasHeight*stageScale+1);
-    for (b = world.GetBodyList(); b; b = b.GetNext()) {
+    //context.clearRect(0, 0, game.canvasWidth*game.STAGE_SCALE+1, game.canvasHeight*game.STAGE_SCALE+1);
+    for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
       if (b.GetType() == b2Body.b2_dynamicBody) {
         var pos = b.GetPosition();
           
@@ -347,11 +334,11 @@ function init() {
           
         var data = b.GetUserData();
         if (data && data.image) {
-          context.save();
-          context.translate(pos.x*stageScale, pos.y*stageScale);
-          context.rotate(b.GetAngle());
-          context.drawImage(data.image, -data.width*stageScale/2, -data.height*stageScale/2, data.width*stageScale, data.height*stageScale);
-          context.restore();
+          game.context.save();
+          game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
+          game.context.rotate(b.GetAngle());
+          game.context.drawImage(data.image, -data.width*game.STAGE_SCALE/2, -data.height*game.STAGE_SCALE/2, data.width*game.STAGE_SCALE, data.height*game.STAGE_SCALE);
+          game.context.restore();
         }
       }
     }
@@ -383,7 +370,7 @@ function init() {
   }
    
   function wakeAllBody() {
-    for (b = world.GetBodyList() ; b; b = b.GetNext()) {
+    for (b = game.world.GetBodyList() ; b; b = b.GetNext()) {
       if (b.GetType() == b2Body.b2_dynamicBody) {
         b.SetAwake(true);
       }
@@ -425,7 +412,17 @@ function init() {
      wakeAllBody();
      setGravity("DOWN");
   });
-};
+  
+  requestAnimFrame(update);
+}
+
+
+
+
+
+
+
+
 
 
 // $(document).bind("keydown", function (event) { console.log(event.keyCode); });
@@ -467,13 +464,9 @@ function keyIsDown (keyCode) {
 }
 $(document).bind("keydown", onKeyDown);
 $(document).bind("keyup", onKeyUp);
-  
+
 captureKey(Keys.UP);
 captureKey(Keys.DOWN);
 captureKey(Keys.LEFT);
 captureKey(Keys.RIGHT);
 captureKey(Keys.BACKSPACE);
-
-$(document).ready(function() {
-  init();
-});

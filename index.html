@@ -6,7 +6,16 @@
   <script type="text/javascript" src="js/lib/jquery-1.8.3.min.js"></script>
   <script type="text/javascript" src="js/lib/Box2dWeb-2.1.a.3.min.js"></script>
   
+  <script type="text/javascript" src="js/app/utils.js"></script>
   <script type="text/javascript" src="js/app/game.js"></script>
+  
+  <script type="text/javascript">
+  var game;
+  $(document).ready(function() {
+    game = new Game("game-canvas");
+    game.setup();
+  });
+  </script>
   
   <link rel="stylesheet" href="css/style.css" />
 </head>
