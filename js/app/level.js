@@ -3,6 +3,9 @@ var Level = function (game, levelData) {
   this.level = levelData.level;
   this.playerPosition = levelData.player;
   this.goalPosition = levelData.goal;
+  this.img = new Image();
+  this.imgUrl = "http://placehold.it/100x100";
+  this.img.src = this.imgUrl;
 }
 
 Level.prototype.draw = function () {
@@ -15,20 +18,13 @@ Level.prototype.draw = function () {
   game.bodyDef.type = b2Body.b2_staticBody;
   game.fixDef.shape = new b2PolygonShape;
   
-  function getX (x) {
-    return x/1000 * game.canvasWidth;
-  }
-  function getY (y) {
-    return y/1000 * game.canvasHeight;
-  }
-  
   game.bodyDef.type = b2Body.b2_staticBody;
   for (i=0; i<level.length; i++) {
     
-    var w = getX(level[i].w);
-    var h = getY(level[i].h);
-    var x = getX(level[i].x) + w/2;
-    var y = getY(level[i].y) + h/2;
+    var w = this.getX(level[i].w);
+    var h = this.getY(level[i].h);
+    var x = this.getX(level[i].x) + w/2;
+    var y = this.getY(level[i].y) + h/2;
     game.fixDef.shape.SetAsBox(w/2, h/2);
     game.bodyDef.position.Set(x, y);
     game.world.CreateBody(game.bodyDef).CreateFixture(game.fixDef);
@@ -86,4 +82,33 @@ Level.prototype.draw = function () {
     f.SetUserData(data);
     //f.SetRestitution(game.globalRestitution);
   }
+}
+
+Level.prototype.getX = function (x) {
+  return x/1000 * this.game.canvasWidth;
+}
+Level.prototype.getY = function (y) {
+  return y/1000 * this.game.canvasHeight;
+}
+
+Level.prototype.render = function () {
+  var level = this.level;
+  var game = this.game;
+  var obj = this.obj;
+	var width = this.width;
+  var height = this.height;
+	var srcw = 50;
+  var srch = 50;
+  var srcx = 0;
+  var srcy = 0;
+  
+  for (i=0; i<level.length; i++) {
+    var w = this.getX(level[i].w) * game.STAGE_SCALE;
+    var h = this.getY(level[i].h) * game.STAGE_SCALE;
+    var x = this.getX(level[i].x) * game.STAGE_SCALE;
+    var y = this.getY(level[i].y) * game.STAGE_SCALE;
+  	game.context.drawImage(this.img, x, y, w, h);
+  }
+  
+  game.context.restore();
 }

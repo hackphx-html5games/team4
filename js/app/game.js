@@ -43,7 +43,7 @@ Game.prototype.setup = function () {
   
   var fixDef = new b2FixtureDef;
   fixDef.density = 10.0;
-  fixDef.friction = 1.9;
+  fixDef.friction = 0.9;
   fixDef.restitution = game.globalRestitution;
   fixDef.shape = new b2PolygonShape;
   game.fixDef = fixDef;
@@ -169,7 +169,10 @@ Game.prototype.setup = function () {
     game.world.DrawDebugData();
     game.world.ClearForces();
     
-    //context.clearRect(0, 0, game.canvasWidth*game.STAGE_SCALE+1, game.canvasHeight*game.STAGE_SCALE+1);
+    game.context.clearRect(0, 0, game.canvasWidth*game.STAGE_SCALE+1, game.canvasHeight*game.STAGE_SCALE+1);
+    
+    game.levels[game.currentLevel].render();
+    
     for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
       if (b.GetType() == b2Body.b2_dynamicBody) {
         var pos = b.GetPosition();
@@ -186,7 +189,7 @@ Game.prototype.setup = function () {
         /**/
         
         var data = b.GetUserData();
-        if (data && data.image) {
+        if (data && data.image && !data.isPlayer) {
           game.context.save();
           game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
           game.context.rotate(b.GetAngle());

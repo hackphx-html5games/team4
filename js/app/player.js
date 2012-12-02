@@ -2,14 +2,16 @@ var Player = function (game) {
   this.game = game;
   //this.imgUrl = "8bit-stache.jpg";
   this.imgUrl = "img/samus_fullsheet.png";
+  this.imgUrl = "img/sprites.png";
   this.img = new Image();
   this.img.src = this.imgUrl;
   this.direction = "left"; // left or right
-  this.state = "runright"; // standleft, standright, runleft, runright, jumpleft, jumpright
+  this.state = "run"; // standleft, standright, runleft, runright, jumpleft, jumpright
   this.frameIndex = 0;
   this.width = 8;
   this.height = 11;
   this.index = 0;
+  this.lastMove = 0;
 }
 
 Player.prototype.create = function () {
@@ -40,14 +42,23 @@ Player.prototype.create = function () {
   bd.SetUserData(data);
   game.fixDef.restitution = 0;
   f = bd.CreateFixture(game.fixDef);
+  f.SetRestitution(0);
   f.SetUserData(data);
   
   this.obj = bd;
 }
 
 Player.prototype.move = function (dir) {
+  this.lastMove = Date.now();
   var obj = this.obj;
   var game = this.game;
+  
+  if (dir == "left") {
+    this.direction = dir;
+  } else
+  if (dir == "right") {
+    this.direction = dir;
+  }
   
   this.process();
   
@@ -102,57 +113,96 @@ Player.prototype.render = function () {
   var d = Date.now();
   this.process();
   
+  if (this.isTouching()) {
+    if (this.lastMove > Date.now() - 200) {
+      this.state = "run";
+    } else {
+      this.state = "stand";
+    }
+  } else {
+    if (this.state != "jump") {
+      this.state = "jump";
+      this.animationStart = Date.now();
+    }
+  }
+  
   game.context.save();
   game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
   game.context.rotate(obj.GetAngle());
   
+	frameCount = 10;
+	srcx = 0;
+	srcy = 88;
+	srcw = 49;
+	srch = 48;
+  noRepeat = false;
   
-  frameCount = 9;
-  
-	switch(this.state){
+	switch(this.state + this.direction){
 		case "standleft" :
-			srcx = 306;
-			srcy = 359;
-			w = 49;
-			h = 48;
-			frameCount = 9;
+			srcx = 0;
+			srcy = 0;
+			srcw = 35;
+			srch = 44;
+			frameCount = 4;
 			break;
 		case "standright" :
-			srcx = 736;
-			srcy = 1105;		
+  		srcx = 0;
+  		srcy = 44;
+  		srcw = 35;
+  		srch = 44;
+      frameCount = 4;
 			break;
 		case "runleft" :
-			srcx = 13;
-			srcy = 537;		
+			srcx = 0;
+			srcy = 88;
+			srcw = 35;
+			srch = 44;
+			frameCount = 10;
 			break;
 		case "runright" :
-			srcx = 483 + (this.index * 49);
-			srcy = 601;			
-			w = 49;
-			h = 48;
-			frameCount = 9;
+			srcx = 0;
+			srcy = 132;			
+			srcw = 35;
+			srch = 44;
+			frameCount = 10;
 			break;
 		case "jumpleft" :
-			srcx = 29;
-			srcy = 364;		
+			srcx = 0;
+			srcy = 176;
+      srcw = 35;
+      srch = 47;
+			frameCount = 4;
+      noRepeat = true;
 			break;
 		case "jumpright" :
-			srcx = 381;
-			srcy = 363;		
+  		srcx = 0;
+  		srcy = 223;
+      srcw = 35;
+      srch = 47;
+  		frameCount = 4;
+      noRepeat = true;
 			break;
 	}
-	currentFrame = Math.floor(d/framerate) % frameCount;
-	console.log(currentFrame);
+  if (noRepeat) {
+    currentFrame = Math.floor((d-this.animationStart)/framerate);
+    if (currentFrame >= frameCount) {
+      currentFrame = frameCount - 1;
+    }
+  } else {
+    currentFrame = Math.floor(d/framerate) % frameCount;
+  }
+	//console.log(currentFrame);
 	
-	
-	game.context.drawImage(this.img, 
-  	srcx + srcw*currentFrame,  	srcy,
-  	srcw,  	srch,
-    -width*game.STAGE_SCALE/2, 
-    -height*game.STAGE_SCALE/2, 
-    width*game.STAGE_SCALE, 
-    height*game.STAGE_SCALE
-  );
+  if (1==1) {
+  	game.context.drawImage(this.img, 
+    	srcx + srcw*currentFrame,  	srcy,
+    	srcw,  	srch,
+      -width*game.STAGE_SCALE/2, 
+      -height*game.STAGE_SCALE/2, 
+      width*game.STAGE_SCALE, 
+      height*game.STAGE_SCALE
+    );
+  }
 
   game.context.restore();
 }
@@ -166,7 +216,7 @@ function AnimatePlayer(state){
 
 Player.prototype.isTouching = function () {
   this.getContacts();
-  return this.lastContact > Date.now()-200;
+  return this.lastContact > Date.now()-300;
 }
 
 Player.prototype.getContacts = function () {
