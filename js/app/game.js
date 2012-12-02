@@ -257,21 +257,24 @@ Game.prototype.setup = function () {
     }
   }
   // Defines the direction of gravity
+
   function setGravity(direction) {
-    if (direction === "UP") {
-      gravity.y = -GRAVITY;
+      var gravity = game.gravity;
+
+      if (direction === "UP") {
+      gravity.y = -game.GRAVITY;
       gravity.x = 0;
     }
     else if (direction === "DOWN") {
-      gravity.y = GRAVITY;
+      gravity.y = game.GRAVITY;
       gravity.x = 0;
     }
     else if (direction === "LEFT") {
-      gravity.x = -GRAVITY;
+      gravity.x = -game.GRAVITY;
       gravity.y = 0;
     }
     else if (direction === "RIGHT") {
-      gravity.x = GRAVITY;
+      gravity.x = game.GRAVITY;
       gravity.y = 0;
     }
   }
