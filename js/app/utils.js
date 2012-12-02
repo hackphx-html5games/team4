@@ -72,6 +72,7 @@ var keysDown = {};
 var captureKeys = {};
 function onKeyDown (event) {
   keysDown[event.keyCode] = true;
+  $(document).trigger("keydown"+event.keyCode);
   if (captureKeys.hasOwnProperty(event.keyCode) && captureKeys[event.keyCode] == true) {
     event.preventDefault();
     return false;
@@ -79,6 +80,7 @@ function onKeyDown (event) {
 }
 function onKeyUp (event) {
   keysDown[event.keyCode] = false;
+  $(document).trigger("keyup"+event.keyCode);
   if (captureKeys.hasOwnProperty(event.keyCode) && captureKeys[event.keyCode] == true) {
     event.preventDefault();
     return false;

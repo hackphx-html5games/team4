@@ -96,6 +96,23 @@ Game.prototype.setup = function () {
      game.setGravity("DOWN");
   });
   
+  $(document).bind("keydown"+Keys.W, function () {
+    game.setGravityAngle(-Math.PI/2);
+    game.wakeAllBody();
+  });
+  $(document).bind("keydown"+Keys.A, function () {
+    game.setGravityAngle(Math.PI);
+    game.wakeAllBody();
+  });
+  $(document).bind("keydown"+Keys.S, function () {
+    game.setGravityAngle(Math.PI/2);
+    game.wakeAllBody();
+  });
+  $(document).bind("keydown"+Keys.D, function () {
+    game.setGravityAngle(0);
+    game.wakeAllBody();
+  });
+  
   game.drawLevel();
   requestAnimFrame(function () { game.update(); });
 }
@@ -103,31 +120,14 @@ Game.prototype.setup = function () {
 Game.prototype.update = function () {
   var game = this;
   //game.player.process();
-    
-  if (keyIsDown(Keys.W)) {
-    game.setGravityAngle(-Math.PI/2);
-    game.wakeAllBody();
-  }
-  if (keyIsDown(Keys.A)) {
-    game.setGravityAngle(Math.PI);
-    game.wakeAllBody();
-  }
-  if (keyIsDown(Keys.S)) {
-    game.setGravityAngle(Math.PI/2);
-    game.wakeAllBody();
-  }
-  if (keyIsDown(Keys.D)) {
-    game.setGravityAngle(0);
-    game.wakeAllBody();
-  }
-    
+  
   if (keyIsDown(Keys.LEFT)) {
     game.player.move("left");
   } else
   if (keyIsDown(Keys.RIGHT)) {
     game.player.move("right");
   }
-      
+  
   if(isMouseDown && (!mouseJoint)) {
     var body = game.getBodyAtMouse();
     if(body) {
@@ -141,7 +141,7 @@ Game.prototype.update = function () {
       body.SetAwake(true);
     }
   }
-      
+  
   if (mouseJoint) {
     if (isMouseDown) {
       mouseJoint.SetTarget(new b2Vec2(game.mouseX, game.mouseY));
@@ -150,30 +150,19 @@ Game.prototype.update = function () {
       mouseJoint = null;
     }
   }
-    
+  
   game.world.Step(1 / 60, 10, 10);
   game.world.DrawDebugData();
   game.world.ClearForces();
-    
+  
   game.context.clearRect(0, 0, game.canvasWidth*game.STAGE_SCALE+1, game.canvasHeight*game.STAGE_SCALE+1);
-    
+  
   game.levels[game.currentLevel].render();
-    
+  
   for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
     if (b.GetType() == b2Body.b2_dynamicBody) {
       var pos = b.GetPosition();
-        
-      /** /
-      if (pos.x < -2 || pos.x > width) {
-            
-        b.SetLinearVelocity(new b2Vec2(0, 0));
-        b.SetAngularVelocity(0);
-            
-        b.SetPositionAndAngle(new b2Vec2(38, 0), 0);
-
-      }
-      /**/
-        
+      
       var data = b.GetUserData();
       if (data && data.image && !data.isPlayer) {
         game.context.save();
@@ -185,7 +174,7 @@ Game.prototype.update = function () {
     }
   }
   game.player.render();
-    
+  
   requestAnimFrame(function () { game.update(); });
 }
 
