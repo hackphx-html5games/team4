@@ -72,7 +72,7 @@ Player.prototype.move = function (dir) {
   var _y = pos.y;
   var y2 = 0;
   
-  var movementAmount = 2 * obj.GetMass();
+  var movementAmount = 4 * obj.GetMass();
   
   if (dir == "left") {
     angle = game.gravityAngle+Math.PI/2;

@@ -1,17 +1,19 @@
 var Game = function (el) {
-  this.el = el;
-  this.GRAVITY = 100;
-  this.STAGE_SCALE = 10;
-  this.currentLevel = 0;
-  this.levels = [];
-  this.globalRestitution = 0.2;
-  this.mouseX = 0;
-  this.mouseY = 0;
-  this.mousePVec = null;
+  var game = this;
+  
+  game.el = el;
+  game.GRAVITY = 100;
+  game.STAGE_SCALE = 10;
+  game.currentLevel = 0;
+  game.levels = [];
+  game.globalRestitution = 0.2;
+  game.mouseX = 0;
+  game.mouseY = 0;
+  game.mousePVec = null;
+  game.isMouseDown = null;
+  game.selectedBody = null;
+  game.mouseJoint = null;
 }
-
-
-var isMouseDown, selectedBody, mouseJoint;
 
 Game.prototype.setup = function () {
   var game = this;
@@ -71,14 +73,14 @@ Game.prototype.setup = function () {
     game.onMouseMove(e);
   }
   document.addEventListener("mousedown", function(e) {
-    isMouseDown = true;
+    game.isMouseDown = true;
     game.onMouseMove(e);
     document.addEventListener("mousemove", onMouseMove, true);
   }, true);
          
   document.addEventListener("mouseup", function() {
     document.removeEventListener("mousemove", onMouseMove, true);
-    isMouseDown = false;
+    game.isMouseDown = false;
     game.mouseX = null;
     game.mouseY = null;
   }, true);
@@ -128,7 +130,7 @@ Game.prototype.update = function () {
     game.player.move("right");
   }
   
-  if(isMouseDown && (!mouseJoint)) {
+  if(game.isMouseDown && (!game.mouseJoint)) {
     var body = game.getBodyAtMouse();
     if(body) {
       var md = new b2MouseJointDef();
@@ -137,17 +139,17 @@ Game.prototype.update = function () {
       md.target.Set(game.mouseX, game.mouseY);
       md.collideConnected = true;
       md.maxForce = 500.0 * body.GetMass();
-      mouseJoint = game.world.CreateJoint(md);
+      game.mouseJoint = game.world.CreateJoint(md);
       body.SetAwake(true);
     }
   }
   
-  if (mouseJoint) {
-    if (isMouseDown) {
-      mouseJoint.SetTarget(new b2Vec2(game.mouseX, game.mouseY));
+  if (game.mouseJoint) {
+    if (game.isMouseDown) {
+      game.mouseJoint.SetTarget(new b2Vec2(game.mouseX, game.mouseY));
     } else {
-      game.world.DestroyJoint(mouseJoint);
-      mouseJoint = null;
+      game.world.DestroyJoint(game.mouseJoint);
+      game.mouseJoint = null;
     }
   }
   
@@ -201,9 +203,11 @@ Game.prototype.setGravity = function (direction) {
 
 
 Game.prototype.setGravityAngle = function (r) {
-  this.gravityAngle = r;
-  this.gravity.x = Math.cos(r) * game.GRAVITY;
-  this.gravity.y = Math.sin(r) * game.GRAVITY;
+  var game = this;
+  
+  game.gravityAngle = r;
+  game.gravity.x = Math.cos(r) * game.GRAVITY;
+  game.gravity.y = Math.sin(r) * game.GRAVITY;
 }
   
 Game.prototype.wakeAllBody = function () {
@@ -280,9 +284,9 @@ Game.prototype.getBodyAtMouse = function () {
     
   // Query the world for overlapping shapes.
     
-  selectedBody = null;
+  game.selectedBody = null;
   game.world.QueryAABB(game.getBodyCB, aabb);
-  return selectedBody;
+  return game.selectedBody;
 }
 
 Game.prototype.getBodyCB = function (fixture) {
@@ -290,7 +294,7 @@ Game.prototype.getBodyCB = function (fixture) {
     
   if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
     if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), game.mousePVec)) {
-      selectedBody = fixture.GetBody();
+      game.selectedBody = fixture.GetBody();
       return false;
     }
   }
