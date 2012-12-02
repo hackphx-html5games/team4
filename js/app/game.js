@@ -55,11 +55,14 @@ function init() {
   canvasWidth /= stageScale;
   canvasHeight /= stageScale;
   
-  world = new b2World(
-         new b2Vec2(0, 30)    //gravity
-      ,  true                 //allow sleep
-   );
-    
+  //create world and gravity
+  var GRAVITY = 30;
+  var gravity = new b2Vec2(0, GRAVITY);
+  var world = new b2World(
+    gravity    //gravity
+    ,  true                 //allow sleep
+  );
+  
   var fixDef = new b2FixtureDef;
   fixDef.density = 10.0;
   fixDef.friction = 1.9;
@@ -355,29 +358,55 @@ function init() {
     requestAnimFrame(update);
   };
          
-   //helpers
+  //helpers
          
-   //http://js-tut.aardon.de/js-tut/tutorial/position.html
-   function getElementPosition(element) {
-      var elem=element, tagname="", x=0, y=0;
+  //http://js-tut.aardon.de/js-tut/tutorial/position.html
+  function getElementPosition(element) {
+    var elem=element, tagname="", x=0, y=0;
            
-      while((typeof(elem) == "object") && (typeof(elem.tagName) != "undefined")) {
-         y += elem.offsetTop;
-         x += elem.offsetLeft;
-         tagname = elem.tagName.toUpperCase();
-
-         if(tagname == "BODY")
-            elem=0;
-
-         if(typeof(elem) == "object") {
-            if(typeof(elem.offsetParent) == "object")
-               elem = elem.offsetParent;
-         }
+    while((typeof(elem) == "object") && (typeof(elem.tagName) != "undefined")) {
+      y += elem.offsetTop;
+      x += elem.offsetLeft;
+      tagname = elem.tagName.toUpperCase();
+      
+      if(tagname == "BODY")
+        elem=0;
+      
+      if(typeof(elem) == "object") {
+        if(typeof(elem.offsetParent) == "object")
+          elem = elem.offsetParent;
       }
-
-      return {x: x, y: y};
-   }
-
+    }
+    
+    return {x: x, y: y};
+  }
+   
+  function wakeAllBody() {
+    for (b = world.GetBodyList() ; b; b = b.GetNext()) {
+      if (b.GetType() == b2Body.b2_dynamicBody) {
+        b.SetAwake(true);
+      }
+    }
+  }
+  // Defines the direction of gravity
+  function setGravity(direction) {
+    if (direction === "UP") {
+      gravity.y = -GRAVITY;
+      gravity.x = 0;
+    }
+    else if (direction === "DOWN") {
+      gravity.y = GRAVITY;
+      gravity.x = 0;
+    }
+    else if (direction === "LEFT") {
+      gravity.x = -GRAVITY;
+      gravity.y = 0;
+    }
+    else if (direction === "RIGHT") {
+      gravity.x = GRAVITY;
+      gravity.y = 0;
+    }
+  }
 
 };
   
@@ -395,6 +424,23 @@ var Keys = {
   OPTION: 18,
   BACKSPACE: 8
 };
+     
+$("#gravityRight").click(function () {
+   wakeAllBody();
+   setGravity("RIGHT");
+});
+$("#gravityLeft").click(function () {
+   wakeAllBody();
+   setGravity("LEFT");
+});
+$("#gravityUp").click(function () {
+   wakeAllBody();
+   setGravity("UP");
+});
+$("#gravityDown").click(function () {
+   wakeAllBody();
+   setGravity("DOWN");
+});
   
 var keysDown = {};
 var captureKeys = {};
