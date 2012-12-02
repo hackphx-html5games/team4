@@ -34,9 +34,9 @@ Player.prototype.create = function () {
   };
   
   bd.SetUserData(data);
+  game.fixDef.restitution = 0;
   f = bd.CreateFixture(game.fixDef);
   f.SetUserData(data);
-  f.SetRestitution(0);
   
   this.obj = bd;
 }

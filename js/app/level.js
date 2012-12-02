@@ -24,8 +24,13 @@ Level.prototype.draw = function () {
   
   game.bodyDef.type = b2Body.b2_staticBody;
   for (i=0; i<level.length; i++) {
-    game.fixDef.shape.SetAsBox(getX(level[i].w), getY(level[i].h));
-    game.bodyDef.position.Set(getX(level[i].x), getY(level[i].y));
+    
+    var w = getX(level[i].w);
+    var h = getY(level[i].h);
+    var x = getX(level[i].x) + w/2;
+    var y = getY(level[i].y) + h/2;
+    game.fixDef.shape.SetAsBox(w/2, h/2);
+    game.bodyDef.position.Set(x, y);
     game.world.CreateBody(game.bodyDef).CreateFixture(game.fixDef);
   }
   
@@ -76,8 +81,9 @@ Level.prototype.draw = function () {
     
     bd.SetUserData(data);
     objects.push(bd);
+    game.fixDef.restitution = game.globalRestitution;
     f = bd.CreateFixture(game.fixDef);
     f.SetUserData(data);
-    f.SetRestitution(globalRestitution);
+    //f.SetRestitution(game.globalRestitution);
   }
 }

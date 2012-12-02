@@ -4,10 +4,10 @@ var Game = function (el) {
   this.STAGE_SCALE = 10;
   this.currentLevel = 0;
   this.levels = [];
+  this.globalRestitution = 0.2;
 }
 
 
-var globalRestitution = 0.2;
 var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint, movementJoint;
 
 Game.prototype.setup = function () {
@@ -44,7 +44,7 @@ Game.prototype.setup = function () {
   var fixDef = new b2FixtureDef;
   fixDef.density = 10.0;
   fixDef.friction = 1.9;
-  fixDef.restitution = globalRestitution;
+  fixDef.restitution = game.globalRestitution;
   fixDef.shape = new b2PolygonShape;
   game.fixDef = fixDef;
   
@@ -265,7 +265,9 @@ Game.prototype.setupLevels = function () {
         {x: 0, y: 0, w: 1000, h: 10},
         {x: 0, y: 0, w: 10, h: 1000},
         {x: 1000, y: 0, w: 10, h: 1000},
-        {x: 0, y: 1000, w: 1000, h: 10}
+        {x: 0, y: 1000, w: 1000, h: 10},
+        {x: 0, y: 300, w: 800, h: 10},
+        {x: 300, y: 600, w: 700, h: 10}
       ],
       player: {x: 100, y: 900},
       goal: {x: 900, y: 100}
