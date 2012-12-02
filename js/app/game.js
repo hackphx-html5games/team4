@@ -29,12 +29,15 @@ Game.prototype.setup = function () {
   game.canvasHeight /= game.STAGE_SCALE;
   //console.log("game.canvasWidth: "+game.canvasWidth);
   
+  game.gravityAngle = Math.PI/2;
+  
   //create world and gravity
   game.gravity = new b2Vec2(0, game.GRAVITY);
   game.world = new b2World(
     game.gravity    //gravity
     ,  true                 //allow sleep
   );
+  game.setGravityAngle(game.gravityAngle);
   
   var fixDef = new b2FixtureDef;
   fixDef.density = 10.0;
@@ -134,12 +137,6 @@ Game.prototype.setup = function () {
     mouseX = undefined;
     mouseY = undefined;
   }, true);
-  
-  
-  
-  
-  
-  
   
   function handleMouseMove(e) {
     mouseX = (e.clientX - game.canvasPosition.x) / game.STAGE_SCALE;
@@ -249,50 +246,39 @@ Game.prototype.setup = function () {
   
   //helpers
    
-  function wakeAllBody() {
-    for (b = game.world.GetBodyList() ; b; b = b.GetNext()) {
-      if (b.GetType() == b2Body.b2_dynamicBody) {
-        b.SetAwake(true);
-      }
-    }
-  }
   // Defines the direction of gravity
 
   function setGravity(direction) {
-      var gravity = game.gravity;
-
-      if (direction === "UP") {
-      gravity.y = -game.GRAVITY;
-      gravity.x = 0;
+    var gravity = game.gravity;
+    
+    if (direction === "UP") {
+      game.setGravityAngle(-Math.PI/2);
     }
     else if (direction === "DOWN") {
-      gravity.y = game.GRAVITY;
-      gravity.x = 0;
+      game.setGravityAngle(Math.PI/2);
     }
     else if (direction === "LEFT") {
-      gravity.x = -game.GRAVITY;
-      gravity.y = 0;
+      game.setGravityAngle(Math.PI);
     }
     else if (direction === "RIGHT") {
-      gravity.x = game.GRAVITY;
-      gravity.y = 0;
+      game.setGravityAngle(0);
     }
   }
   
   $("#gravityRight").click(function () {
-     wakeAllBody();
+     game.wakeAllBody();
      setGravity("RIGHT");
   });
   $("#gravityLeft").click(function () {
-     wakeAllBody();
+     game.wakeAllBody();
      setGravity("LEFT");
   });
   $("#gravityUp").click(function () {
-     wakeAllBody();
+     game.wakeAllBody();
      setGravity("UP");
   });
   $("#gravityDown").click(function () {
-     wakeAllBody();
+     game.wakeAllBody();
      setGravity("DOWN");
   });
   
@@ -300,6 +286,21 @@ Game.prototype.setup = function () {
 }
 
 
+Game.prototype.setGravityAngle = function (r) {
+  this.gravityAngle = r;
+  this.gravity.x = Math.cos(r) * game.GRAVITY;
+  this.gravity.y = Math.sin(r) * game.GRAVITY;
+}
+  
+Game.prototype.wakeAllBody = function () {
+  var game = this;
+  
+  for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
+    if (b.GetType() == b2Body.b2_dynamicBody) {
+      b.SetAwake(true);
+    }
+  }
+}
 
 
 

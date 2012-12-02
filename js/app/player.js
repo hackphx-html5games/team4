@@ -73,8 +73,10 @@ Player.prototype.move = function (dir) {
 
 
 Player.prototype.process = function () {
+  var game = this.game;
+  
   this.obj.SetAngularVelocity(0);
-  this.obj.SetAngle(0);
+  this.obj.SetAngle(game.gravityAngle-Math.PI/2);
 }
 
 Player.prototype.render = function () {
@@ -85,7 +87,7 @@ Player.prototype.render = function () {
   var height = this.height;
   var pos = obj.GetPosition();
   
-  //this.process();
+  this.process();
   
   game.context.save();
   game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
