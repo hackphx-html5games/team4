@@ -1,15 +1,11 @@
 var Player = function (game) {
   this.game = game;
-  //this.imgUrl = "8bit-stache.jpg";
-  this.imgUrl = "img/samus_fullsheet.png";
+  this.imgUrl = "8bit-stache.jpg";
   this.img = new Image();
   this.img.src = this.imgUrl;
-  this.direction = "left"; // left or right
-  this.state = "runright"; // standleft, standright, runleft, runright, jumpleft, jumpright
-  this.frameIndex = 0;
+  
   this.width = 8;
   this.height = 11;
-  this.index = 0;
 }
 
 Player.prototype.create = function () {
@@ -88,80 +84,25 @@ Player.prototype.process = function () {
 }
 
 Player.prototype.render = function () {
+  var image = this.image;
   var game = this.game;
   var obj = this.obj;
-	var width = this.width;
+  var width = this.width;
   var height = this.height;
-	var srcw = 50;
-  var srch = 50;
-  var srcx = 0;
-  var srcy = 0;
   var pos = obj.GetPosition();
   
-  var framerate = 100;
-  var d = Date.now();
   this.process();
   
   game.context.save();
   game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
   game.context.rotate(obj.GetAngle());
-  
-  
-  frameCount = 9;
-  
-	switch(this.state){
-		case "standleft" :
-			srcx = 306;
-			srcy = 359;
-			w = 49;
-			h = 48;
-			frameCount = 9;
-			break;
-		case "standright" :
-			srcx = 736;
-			srcy = 1105;		
-			break;
-		case "runleft" :
-			srcx = 13;
-			srcy = 537;		
-			break;
-		case "runright" :
-			srcx = 483 + (this.index * 49);
-			srcy = 601;			
-			w = 49;
-			h = 48;
-			frameCount = 9;
-			break;
-		case "jumpleft" :
-			srcx = 29;
-			srcy = 364;		
-			break;
-		case "jumpright" :
-			srcx = 381;
-			srcy = 363;		
-			break;
-	}
-	currentFrame = Math.floor(d/framerate) % frameCount;
-	console.log(currentFrame);
-	
-	
-	game.context.drawImage(this.img, 
-  	srcx + srcw*currentFrame,  	srcy,
-  	srcw,  	srch,
+  game.context.drawImage(this.img, 
     -width*game.STAGE_SCALE/2, 
     -height*game.STAGE_SCALE/2, 
     width*game.STAGE_SCALE, 
     height*game.STAGE_SCALE
   );
-
   game.context.restore();
-}
-
-function AnimatePlayer(state){
-  
-	var game = this.game;
-
-  
 }
 
 Player.prototype.isTouching = function () {
