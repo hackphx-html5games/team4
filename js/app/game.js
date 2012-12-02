@@ -38,6 +38,8 @@ var   b2Vec2 = Box2D.Common.Math.b2Vec2
  , b2JointDef = Box2D.Dynamics.Joints.b2JointDef
  ;
 
+var GRAVITY = 30;
+var gravity = new b2Vec2(0, GRAVITY);
 
 function init() {
   canvasWidth = window.innerWidth - 10;
@@ -56,9 +58,9 @@ function init() {
   canvasHeight /= stageScale;
   
   //create world and gravity
-  var GRAVITY = 30;
-  var gravity = new b2Vec2(0, GRAVITY);
-  var world = new b2World(
+  GRAVITY = 30;
+  gravity = new b2Vec2(0, GRAVITY);
+  world = new b2World(
     gravity    //gravity
     ,  true                 //allow sleep
   );
@@ -407,7 +409,23 @@ function init() {
       gravity.y = 0;
     }
   }
-
+  
+  $("#gravityRight").click(function () {
+     wakeAllBody();
+     setGravity("RIGHT");
+  });
+  $("#gravityLeft").click(function () {
+     wakeAllBody();
+     setGravity("LEFT");
+  });
+  $("#gravityUp").click(function () {
+     wakeAllBody();
+     setGravity("UP");
+  });
+  $("#gravityDown").click(function () {
+     wakeAllBody();
+     setGravity("DOWN");
+  });
 };
   
 // $(document).bind("keydown", function (event) { console.log(event.keyCode); });
@@ -424,23 +442,6 @@ var Keys = {
   OPTION: 18,
   BACKSPACE: 8
 };
-     
-$("#gravityRight").click(function () {
-   wakeAllBody();
-   setGravity("RIGHT");
-});
-$("#gravityLeft").click(function () {
-   wakeAllBody();
-   setGravity("LEFT");
-});
-$("#gravityUp").click(function () {
-   wakeAllBody();
-   setGravity("UP");
-});
-$("#gravityDown").click(function () {
-   wakeAllBody();
-   setGravity("DOWN");
-});
   
 var keysDown = {};
 var captureKeys = {};
