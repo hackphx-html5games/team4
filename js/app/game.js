@@ -2,6 +2,8 @@ var Game = function (el) {
   this.el = el;
   this.GRAVITY = 30;
   this.STAGE_SCALE = 10;
+  this.currentLevel = 0;
+  this.levels = [];
 }
 
 
@@ -43,76 +45,13 @@ Game.prototype.setup = function () {
   fixDef.density = 10.0;
   fixDef.friction = 1.9;
   fixDef.restitution = globalRestitution;
-    
-  var bodyDef = new b2BodyDef;
-    
-  //create ground
-  bodyDef.type = b2Body.b2_staticBody;
   fixDef.shape = new b2PolygonShape;
-  fixDef.shape.SetAsBox(game.canvasWidth, game.canvasHeight*.01);
-  bodyDef.position.Set(game.canvasWidth*.01, game.canvasHeight);
-  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
-  bodyDef.position.Set(game.canvasWidth, game.canvasHeight*.01);
-  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
-  fixDef.shape.SetAsBox(game.canvasWidth*.01, game.canvasHeight);
-  bodyDef.position.Set(game.canvasWidth*.01, game.canvasHeight);
-  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
-  bodyDef.position.Set(game.canvasWidth, game.canvasHeight);
-  game.world.CreateBody(bodyDef).CreateFixture(fixDef);
+  game.fixDef = fixDef;
   
-  //create some objects
-  bodyDef.type = b2Body.b2_dynamicBody;
-  var objects = [];
-  window.objects = objects;
-  for(var i = 0; i < 10; ++i) {
-    objWidth = Math.round(game.canvasWidth*.1 * (Math.random() + 0.1));
-    objHeight = Math.round(game.canvasWidth*.1 * (Math.random() + 0.1));
-    
-    //console.log("game.canvasWidth: "+game.canvasWidth);
-    //console.log("objWidth: "+objWidth);
-    //console.log("objHeight: "+objHeight);
-    if(Math.random() > 0.5) {
-      fixDef.shape = new b2PolygonShape;
-      fixDef.shape.SetAsBox(
-          objWidth/2 //half width
-        , objHeight/2 //half height
-      );
-    } else {
-      fixDef.shape = new b2CircleShape(
-        objWidth/2 //radius
-      );
-      objHeight = objWidth;
-    }
-    bodyDef.position.x = Math.random() * game.canvasWidth;
-    bodyDef.position.y = game.canvasHeight*.1 + Math.random() * game.canvasHeight*.4;
-    bd = game.world.CreateBody(bodyDef);
-    
-    var img = new Image();
-    var imgUrl;
-    imgUrl = "http://placehold.it/"+(objWidth*game.STAGE_SCALE)+"x"+(objHeight*game.STAGE_SCALE);
-    img.src = imgUrl;
-    var data = {
-      id: i,
-      image: img,
-      imgUrl: imgUrl,
-      width: objWidth,
-      height: objHeight,
-      isPlayer: false
-    };
-    (function (data, img) {
-      img.onload = function () {
-        data.loaded = true;
-      }
-    })(data, img);
-    
-    bd.SetUserData(data);
-    objects.push(bd);
-    f = bd.CreateFixture(fixDef);
-    f.SetUserData(data);
-    f.SetRestitution(globalRestitution);
-  }
+  var bodyDef = new b2BodyDef;
+  game.bodyDef = bodyDef;
   
-  game.player.create(bodyDef, fixDef);
+  game.setupLevels();
   
   //setup debug draw
   var debugDraw = new b2DebugDraw();
@@ -172,6 +111,23 @@ Game.prototype.setup = function () {
     if (movementJoint) {
       game.world.DestroyJoint(movementJoint);
       movementJoint = null;
+    }
+    
+    if (keyIsDown(Keys.W)) {
+      game.setGravityAngle(-Math.PI/2);
+      game.wakeAllBody();
+    }
+    if (keyIsDown(Keys.A)) {
+      game.setGravityAngle(Math.PI);
+      game.wakeAllBody();
+    }
+    if (keyIsDown(Keys.S)) {
+      game.setGravityAngle(Math.PI/2);
+      game.wakeAllBody();
+    }
+    if (keyIsDown(Keys.D)) {
+      game.setGravityAngle(0);
+      game.wakeAllBody();
     }
     
     if (keyIsDown(Keys.LEFT)) {
@@ -263,25 +219,23 @@ Game.prototype.setup = function () {
     else if (direction === "RIGHT") {
       game.setGravityAngle(0);
     }
+    game.wakeAllBody();
   }
   
   $("#gravityRight").click(function () {
-     game.wakeAllBody();
      setGravity("RIGHT");
   });
   $("#gravityLeft").click(function () {
-     game.wakeAllBody();
      setGravity("LEFT");
   });
   $("#gravityUp").click(function () {
-     game.wakeAllBody();
      setGravity("UP");
   });
   $("#gravityDown").click(function () {
-     game.wakeAllBody();
      setGravity("DOWN");
   });
   
+  game.drawLevel();
   requestAnimFrame(update);
 }
 
@@ -302,9 +256,49 @@ Game.prototype.wakeAllBody = function () {
   }
 }
 
+Game.prototype.setupLevels = function () {
+  var game = this;
+  
+  var levelData = [
+    {
+      level: [
+        {x: 0, y: 0, w: 1000, h: 10},
+        {x: 0, y: 0, w: 10, h: 1000},
+        {x: 1000, y: 0, w: 10, h: 1000},
+        {x: 0, y: 1000, w: 1000, h: 10}
+      ],
+      player: {x: 100, y: 900},
+      goal: {x: 900, y: 100}
+    }, 
+    {
+      level: [
+        {x: 0, y: 0, w: 1000, h: 10},
+        {x: 0, y: 0, w: 10, h: 1000},
+        {x: 1000, y: 0, w: 10, h: 1000},
+        {x: 0, y: 1000, w: 1000, h: 10}
+      ],
+      player: {x: 100, y: 900},
+      goal: {x: 900, y: 100}
+    }
+  ];
+  
+  for (var i=0; i<levelData.length; i++) {
+    game.levels.push(new Level(game, levelData[i]));
+  }
+}
 
-
-
+Game.prototype.drawLevel = function () {
+  var game = this;
+  
+  game.currentLevel;
+  for (var b = game.world.GetBodyList(); b; b = b.GetNext()) {
+    game.world.DestroyBody(b);
+  }
+  
+  game.levels[game.currentLevel].draw();
+  
+  game.player.create();
+}
 
 
 
@@ -321,7 +315,11 @@ var Keys = {
   CONTROL: 17,
   SHIFT: 16,
   OPTION: 18,
-  BACKSPACE: 8
+  BACKSPACE: 8,
+  W: 87,
+  A: 65,
+  S: 83,
+  D: 68
 };
 
 var keysDown = {};

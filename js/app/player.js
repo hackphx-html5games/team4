@@ -8,20 +8,22 @@ var Player = function (game) {
   this.height = 11;
 }
 
-Player.prototype.create = function (bodyDef, fixDef) {
+Player.prototype.create = function () {
   var game = this.game;
   
   //var bodyDef = new b2BodyDef;
   //var fixDef = new b2FixtureDef;
-  fixDef.shape = new b2PolygonShape;
-  fixDef.shape.SetAsBox(
+  game.bodyDef.type = b2Body.b2_dynamicBody;
+  
+  game.fixDef.shape = new b2PolygonShape;
+  game.fixDef.shape.SetAsBox(
       this.width/2 //half width
     , this.height/2 //half height
   );
   
-  bodyDef.position.x = Math.random() * game.canvasWidth;
-  bodyDef.position.y = game.canvasHeight*.1 + Math.random() * game.canvasHeight*.4;
-  bd = game.world.CreateBody(bodyDef);
+  game.bodyDef.position.x = Math.random() * game.canvasWidth;
+  game.bodyDef.position.y = game.canvasHeight*.1 + Math.random() * game.canvasHeight*.4;
+  bd = game.world.CreateBody(game.bodyDef);
   
   var data = {
     image: this.img,
@@ -32,7 +34,7 @@ Player.prototype.create = function (bodyDef, fixDef) {
   };
   
   bd.SetUserData(data);
-  f = bd.CreateFixture(fixDef);
+  f = bd.CreateFixture(game.fixDef);
   f.SetUserData(data);
   f.SetRestitution(0);
   
@@ -41,6 +43,8 @@ Player.prototype.create = function (bodyDef, fixDef) {
 
 Player.prototype.move = function (dir) {
   var obj = this.obj;
+  var game = this.game;
+  
   this.process();
   
   if (!this.isTouching()) {
@@ -56,18 +60,18 @@ Player.prototype.move = function (dir) {
   var movementAmount = 2 * obj.GetMass();
   
   if (dir == "left") {
-    _x -= movementAmount;
-    x2 = -movementAmount;
+    angle = game.gravityAngle+Math.PI/2;
   } else
   if (dir == "right") {
-    _x += movementAmount;
-    x2 = movementAmount;
+    angle = game.gravityAngle-Math.PI/2;
   } else {
-    _y -= movementAmount;
-    y2 = -movementAmount;
+    return;
   }
   
-  obj.ApplyImpulse({x: x2, y: y2}, obj.GetWorldCenter());
+  var _x = Math.cos(angle) * movementAmount;
+  var _y = Math.sin(angle) * movementAmount;
+  
+  obj.ApplyImpulse({x: _x, y: _y}, obj.GetWorldCenter());
   this.process();
 }
 
