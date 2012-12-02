@@ -279,8 +279,8 @@ Game.prototype.setupLevels = function () {
         {x: 1000, y: 0, w: 10, h: 1000},
         {x: 0, y: 1000, w: 1000, h: 10}
       ],
-      player: {x: 100, y: 900},
-      goal: {x: 900, y: 100}
+      player: {x: 900, y: 950},
+      goal: {x: 100, y: 100}
     }
   ];
   
