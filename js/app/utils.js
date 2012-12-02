@@ -47,3 +47,48 @@ function getElementPosition(element) {
   return {x: x, y: y};
 }
 
+
+
+// $(document).bind("keydown", function (event) { console.log(event.keyCode); });
+var Keys = {
+  LEFT: 37,
+  RIGHT: 39,
+  UP: 38,
+  DOWN: 40,
+  SPACE: 32,
+  ENTER: 13,
+  COMMAND: 91,
+  CONTROL: 17,
+  SHIFT: 16,
+  OPTION: 18,
+  BACKSPACE: 8,
+  W: 87,
+  A: 65,
+  S: 83,
+  D: 68
+};
+
+var keysDown = {};
+var captureKeys = {};
+function onKeyDown (event) {
+  keysDown[event.keyCode] = true;
+  if (captureKeys.hasOwnProperty(event.keyCode) && captureKeys[event.keyCode] == true) {
+    event.preventDefault();
+    return false;
+  }
+}
+function onKeyUp (event) {
+  keysDown[event.keyCode] = false;
+  if (captureKeys.hasOwnProperty(event.keyCode) && captureKeys[event.keyCode] == true) {
+    event.preventDefault();
+    return false;
+  }
+}
+function captureKey (keyCode) {
+  captureKeys[keyCode] = true;
+}
+function keyIsDown (keyCode) {
+  return keysDown.hasOwnProperty(keyCode) && keysDown[keyCode] == true;
+}
+$(document).bind("keydown", onKeyDown);
+$(document).bind("keyup", onKeyUp);

@@ -1,14 +1,17 @@
 var Game = function (el) {
   this.el = el;
-  this.GRAVITY = 30;
+  this.GRAVITY = 100;
   this.STAGE_SCALE = 10;
   this.currentLevel = 0;
   this.levels = [];
   this.globalRestitution = 0.2;
+  this.mouseX = 0;
+  this.mouseY = 0;
+  this.mousePVec = null;
 }
 
 
-var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint, movementJoint;
+var isMouseDown, selectedBody, mouseJoint;
 
 Game.prototype.setup = function () {
   var game = this;
@@ -64,182 +67,147 @@ Game.prototype.setup = function () {
   
   game.canvasPosition = getElementPosition(game.canvas);
   
+  function onMouseMove (e) {
+    game.onMouseMove(e);
+  }
   document.addEventListener("mousedown", function(e) {
     isMouseDown = true;
-    handleMouseMove(e);
-    document.addEventListener("mousemove", handleMouseMove, true);
+    game.onMouseMove(e);
+    document.addEventListener("mousemove", onMouseMove, true);
   }, true);
          
   document.addEventListener("mouseup", function() {
-    document.removeEventListener("mousemove", handleMouseMove, true);
+    document.removeEventListener("mousemove", onMouseMove, true);
     isMouseDown = false;
-    mouseX = undefined;
-    mouseY = undefined;
+    game.mouseX = null;
+    game.mouseY = null;
   }, true);
   
-  function handleMouseMove(e) {
-    mouseX = (e.clientX - game.canvasPosition.x) / game.STAGE_SCALE;
-    mouseY = (e.clientY - game.canvasPosition.y) / game.STAGE_SCALE;
-  };
-  
-  function getBodyAtMouse() {
-    mousePVec = new b2Vec2(mouseX, mouseY);
-    var aabb = new b2AABB();
-    aabb.lowerBound.Set(mouseX - 0.01, mouseY - 0.01);
-    aabb.upperBound.Set(mouseX + 0.01, mouseY + 0.01);
-    
-    // Query the world for overlapping shapes.
-    
-    selectedBody = null;
-    game.world.QueryAABB(getBodyCB, aabb);
-    return selectedBody;
-  }
-  
-  function getBodyCB(fixture) {
-    if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
-      if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), mousePVec)) {
-        selectedBody = fixture.GetBody();
-        return false;
-      }
-    }
-    return true;
-  }
-    
-  function update() {
-    //game.player.process();
-    
-    if (movementJoint) {
-      game.world.DestroyJoint(movementJoint);
-      movementJoint = null;
-    }
-    
-    if (keyIsDown(Keys.W)) {
-      game.setGravityAngle(-Math.PI/2);
-      game.wakeAllBody();
-    }
-    if (keyIsDown(Keys.A)) {
-      game.setGravityAngle(Math.PI);
-      game.wakeAllBody();
-    }
-    if (keyIsDown(Keys.S)) {
-      game.setGravityAngle(Math.PI/2);
-      game.wakeAllBody();
-    }
-    if (keyIsDown(Keys.D)) {
-      game.setGravityAngle(0);
-      game.wakeAllBody();
-    }
-    
-    if (keyIsDown(Keys.LEFT)) {
-      game.player.move("left");
-    } else
-    if (keyIsDown(Keys.RIGHT)) {
-      game.player.move("right");
-    } else {
-      if (movementJoint) {
-        game.world.DestroyJoint(movementJoint);
-        movementJoint = null;
-      }
-    }
-      
-    if(isMouseDown && (!mouseJoint)) {
-      var body = getBodyAtMouse();
-      if(body) {
-        var md = new b2MouseJointDef();
-        md.bodyA = game.world.GetGroundBody();
-        md.bodyB = body;
-        md.target.Set(mouseX, mouseY);
-        md.collideConnected = true;
-        md.maxForce = 500.0 * body.GetMass();
-        mouseJoint = game.world.CreateJoint(md);
-        body.SetAwake(true);
-      }
-    }
-      
-    if (mouseJoint) {
-      if (isMouseDown) {
-        mouseJoint.SetTarget(new b2Vec2(mouseX, mouseY));
-      } else {
-        game.world.DestroyJoint(mouseJoint);
-        mouseJoint = null;
-      }
-    }
-    
-    game.world.Step(1 / 60, 10, 10);
-    game.world.DrawDebugData();
-    game.world.ClearForces();
-    
-    game.context.clearRect(0, 0, game.canvasWidth*game.STAGE_SCALE+1, game.canvasHeight*game.STAGE_SCALE+1);
-    
-    game.levels[game.currentLevel].render();
-    
-    for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
-      if (b.GetType() == b2Body.b2_dynamicBody) {
-        var pos = b.GetPosition();
-        
-        /** /
-        if (pos.x < -2 || pos.x > width) {
-            
-          b.SetLinearVelocity(new b2Vec2(0, 0));
-          b.SetAngularVelocity(0);
-            
-          b.SetPositionAndAngle(new b2Vec2(38, 0), 0);
-
-        }
-        /**/
-        
-        var data = b.GetUserData();
-        if (data && data.image && !data.isPlayer) {
-          game.context.save();
-          game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
-          game.context.rotate(b.GetAngle());
-          game.context.drawImage(data.image, -data.width*game.STAGE_SCALE/2, -data.height*game.STAGE_SCALE/2, data.width*game.STAGE_SCALE, data.height*game.STAGE_SCALE);
-          game.context.restore();
-        }
-      }
-    }
-    game.player.render();
-    
-    requestAnimFrame(update);
-  };
-  
-  //helpers
-   
-  // Defines the direction of gravity
-
-  function setGravity(direction) {
-    var gravity = game.gravity;
-    
-    if (direction === "UP") {
-      game.setGravityAngle(-Math.PI/2);
-    }
-    else if (direction === "DOWN") {
-      game.setGravityAngle(Math.PI/2);
-    }
-    else if (direction === "LEFT") {
-      game.setGravityAngle(Math.PI);
-    }
-    else if (direction === "RIGHT") {
-      game.setGravityAngle(0);
-    }
-    game.wakeAllBody();
-  }
-  
   $("#gravityRight").click(function () {
-     setGravity("RIGHT");
+     game.setGravity("RIGHT");
   });
   $("#gravityLeft").click(function () {
-     setGravity("LEFT");
+     game.setGravity("LEFT");
   });
   $("#gravityUp").click(function () {
-     setGravity("UP");
+     game.setGravity("UP");
   });
   $("#gravityDown").click(function () {
-     setGravity("DOWN");
+     game.setGravity("DOWN");
   });
   
   game.drawLevel();
-  requestAnimFrame(update);
+  requestAnimFrame(function () { game.update(); });
+}
+
+Game.prototype.update = function () {
+  var game = this;
+  //game.player.process();
+    
+  if (keyIsDown(Keys.W)) {
+    game.setGravityAngle(-Math.PI/2);
+    game.wakeAllBody();
+  }
+  if (keyIsDown(Keys.A)) {
+    game.setGravityAngle(Math.PI);
+    game.wakeAllBody();
+  }
+  if (keyIsDown(Keys.S)) {
+    game.setGravityAngle(Math.PI/2);
+    game.wakeAllBody();
+  }
+  if (keyIsDown(Keys.D)) {
+    game.setGravityAngle(0);
+    game.wakeAllBody();
+  }
+    
+  if (keyIsDown(Keys.LEFT)) {
+    game.player.move("left");
+  } else
+  if (keyIsDown(Keys.RIGHT)) {
+    game.player.move("right");
+  }
+      
+  if(isMouseDown && (!mouseJoint)) {
+    var body = game.getBodyAtMouse();
+    if(body) {
+      var md = new b2MouseJointDef();
+      md.bodyA = game.world.GetGroundBody();
+      md.bodyB = body;
+      md.target.Set(game.mouseX, game.mouseY);
+      md.collideConnected = true;
+      md.maxForce = 500.0 * body.GetMass();
+      mouseJoint = game.world.CreateJoint(md);
+      body.SetAwake(true);
+    }
+  }
+      
+  if (mouseJoint) {
+    if (isMouseDown) {
+      mouseJoint.SetTarget(new b2Vec2(game.mouseX, game.mouseY));
+    } else {
+      game.world.DestroyJoint(mouseJoint);
+      mouseJoint = null;
+    }
+  }
+    
+  game.world.Step(1 / 60, 10, 10);
+  game.world.DrawDebugData();
+  game.world.ClearForces();
+    
+  game.context.clearRect(0, 0, game.canvasWidth*game.STAGE_SCALE+1, game.canvasHeight*game.STAGE_SCALE+1);
+    
+  game.levels[game.currentLevel].render();
+    
+  for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
+    if (b.GetType() == b2Body.b2_dynamicBody) {
+      var pos = b.GetPosition();
+        
+      /** /
+      if (pos.x < -2 || pos.x > width) {
+            
+        b.SetLinearVelocity(new b2Vec2(0, 0));
+        b.SetAngularVelocity(0);
+            
+        b.SetPositionAndAngle(new b2Vec2(38, 0), 0);
+
+      }
+      /**/
+        
+      var data = b.GetUserData();
+      if (data && data.image && !data.isPlayer) {
+        game.context.save();
+        game.context.translate(pos.x*game.STAGE_SCALE, pos.y*game.STAGE_SCALE);
+        game.context.rotate(b.GetAngle());
+        game.context.drawImage(data.image, -data.width*game.STAGE_SCALE/2, -data.height*game.STAGE_SCALE/2, data.width*game.STAGE_SCALE, data.height*game.STAGE_SCALE);
+        game.context.restore();
+      }
+    }
+  }
+  game.player.render();
+    
+  requestAnimFrame(function () { game.update(); });
+}
+
+
+// Defines the direction of gravity
+Game.prototype.setGravity = function (direction) {
+  var game = this;
+  var gravity = game.gravity;
+    
+  if (direction === "UP") {
+    game.setGravityAngle(-Math.PI/2);
+  }
+  else if (direction === "DOWN") {
+    game.setGravityAngle(Math.PI/2);
+  }
+  else if (direction === "LEFT") {
+    game.setGravityAngle(Math.PI);
+  }
+  else if (direction === "RIGHT") {
+    game.setGravityAngle(0);
+  }
+  game.wakeAllBody();
 }
 
 
@@ -307,50 +275,39 @@ Game.prototype.drawLevel = function () {
 
 
 
+Game.prototype.onMouseMove = function (e) {
+  var game = this;
+  game.mouseX = (e.clientX - game.canvasPosition.x) / game.STAGE_SCALE;
+  game.mouseY = (e.clientY - game.canvasPosition.y) / game.STAGE_SCALE;
+}
 
-// $(document).bind("keydown", function (event) { console.log(event.keyCode); });
-var Keys = {
-  LEFT: 37,
-  RIGHT: 39,
-  UP: 38,
-  DOWN: 40,
-  SPACE: 32,
-  ENTER: 13,
-  COMMAND: 91,
-  CONTROL: 17,
-  SHIFT: 16,
-  OPTION: 18,
-  BACKSPACE: 8,
-  W: 87,
-  A: 65,
-  S: 83,
-  D: 68
-};
+Game.prototype.getBodyAtMouse = function () {
+  var game = this;
+  
+  game.mousePVec = new b2Vec2(game.mouseX, game.mouseY);
+  var aabb = new b2AABB();
+  aabb.lowerBound.Set(game.mouseX - 0.01, game.mouseY - 0.01);
+  aabb.upperBound.Set(game.mouseX + 0.01, game.mouseY + 0.01);
+    
+  // Query the world for overlapping shapes.
+    
+  selectedBody = null;
+  game.world.QueryAABB(game.getBodyCB, aabb);
+  return selectedBody;
+}
 
-var keysDown = {};
-var captureKeys = {};
-function onKeyDown (event) {
-  keysDown[event.keyCode] = true;
-  if (captureKeys.hasOwnProperty(event.keyCode) && captureKeys[event.keyCode] == true) {
-    event.preventDefault();
-    return false;
+Game.prototype.getBodyCB = function (fixture) {
+  var game = this;
+    
+  if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
+    if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), game.mousePVec)) {
+      selectedBody = fixture.GetBody();
+      return false;
+    }
   }
+  return true;
 }
-function onKeyUp (event) {
-  keysDown[event.keyCode] = false;
-  if (captureKeys.hasOwnProperty(event.keyCode) && captureKeys[event.keyCode] == true) {
-    event.preventDefault();
-    return false;
-  }
-}
-function captureKey (keyCode) {
-  captureKeys[keyCode] = true;
-}
-function keyIsDown (keyCode) {
-  return keysDown.hasOwnProperty(keyCode) && keysDown[keyCode] == true;
-}
-$(document).bind("keydown", onKeyDown);
-$(document).bind("keyup", onKeyUp);
+
 
 captureKey(Keys.UP);
 captureKey(Keys.DOWN);
