@@ -5,31 +5,13 @@ var Game = function (el) {
 }
 
 
-var lastPlayerContact = Date.now();
 var globalRestitution = 0.2;
 var mouseX, mouseY, mousePVec, isMouseDown, selectedBody, mouseJoint, movementJoint;
-
-var thePlayer = false;
-var b2Vec2 = Box2D.Common.Math.b2Vec2
-  , b2AABB = Box2D.Collision.b2AABB
-	,	b2BodyDef = Box2D.Dynamics.b2BodyDef
-	,	b2Body = Box2D.Dynamics.b2Body
-	,	b2FixtureDef = Box2D.Dynamics.b2FixtureDef
-	,	b2Fixture = Box2D.Dynamics.b2Fixture
-	,	b2World = Box2D.Dynamics.b2World
-	,	b2MassData = Box2D.Collision.Shapes.b2MassData
-	,	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape
-	,	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape
-	,	b2DebugDraw = Box2D.Dynamics.b2DebugDraw
- ,  b2MouseJointDef =  Box2D.Dynamics.Joints.b2MouseJointDef
- , b2JointDef = Box2D.Dynamics.Joints.b2JointDef
- ;
-
 
 Game.prototype.setup = function () {
   var game = this;
   
-  //game.player = new Player();
+  game.player = new Player(game);
   
   game.canvasWidth = window.innerWidth - 10;
   game.canvasHeight = window.innerHeight - 10;
@@ -74,7 +56,7 @@ Game.prototype.setup = function () {
   game.world.CreateBody(bodyDef).CreateFixture(fixDef);
   bodyDef.position.Set(game.canvasWidth, game.canvasHeight);
   game.world.CreateBody(bodyDef).CreateFixture(fixDef);
-    
+  
   //create some objects
   bodyDef.type = b2Body.b2_dynamicBody;
   var objects = [];
@@ -104,13 +86,7 @@ Game.prototype.setup = function () {
     
     var img = new Image();
     var imgUrl;
-    if (!thePlayer) {
-      imgUrl = "8bit-stache.jpg";
-      thePlayer = bd;
-    } else {
-      //console.log("Scale: "+game.STAGE_SCALE);
-      imgUrl = "http://placehold.it/"+(objWidth*game.STAGE_SCALE)+"x"+(objHeight*game.STAGE_SCALE);
-    }
+    imgUrl = "http://placehold.it/"+(objWidth*game.STAGE_SCALE)+"x"+(objHeight*game.STAGE_SCALE);
     img.src = imgUrl;
     var data = {
       id: i,
@@ -118,7 +94,7 @@ Game.prototype.setup = function () {
       imgUrl: imgUrl,
       width: objWidth,
       height: objHeight,
-      isPlayer: (thePlayer ? false : true)
+      isPlayer: false
     };
     (function (data, img) {
       img.onload = function () {
@@ -130,12 +106,10 @@ Game.prototype.setup = function () {
     objects.push(bd);
     f = bd.CreateFixture(fixDef);
     f.SetUserData(data);
-    if (data.isPlayer == true) {
-      f.SetRestitution(0);
-    } else {
-      f.SetRestitution(globalRestitution);
-    }
+    f.SetRestitution(globalRestitution);
   }
+  
+  game.player.create(bodyDef, fixDef);
   
   //setup debug draw
   var debugDraw = new b2DebugDraw();
@@ -185,43 +159,6 @@ Game.prototype.setup = function () {
     return selectedBody;
   }
   
-  function getPlayer() {
-    if (thePlayer) {
-      return thePlayer;
-    }
-    for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
-      if (b.GetType() == b2Body.b2_dynamicBody) {
-        var pos = b.GetPosition();
-        var data = b.GetUserData();
-        if (data.isPlayer) {
-          return b;
-        }
-      }
-    }
-  }
-  
-  function playerIsTouching () {
-    return lastPlayerContact > Date.now()-200;
-  }
-  function getPlayerContacts () {
-    var player = getPlayer();
-    var nowTouching = false;
-    
-    var contacts = player.GetContactList();
-    if (!contacts) {
-      return;
-    }
-    count = 0;
-    while (contacts) {
-      if (contacts && contacts.contact && contacts.contact.IsTouching && contacts.contact.IsTouching()) {
-        if (contacts.contact.IsTouching()) {
-          lastPlayerContact = Date.now();
-        }
-      }
-      contacts = contacts.next;
-    }
-  }
-  
   function getBodyCB(fixture) {
     if(fixture.GetBody().GetType() != b2Body.b2_staticBody) {
       if(fixture.GetShape().TestPoint(fixture.GetBody().GetTransform(), mousePVec)) {
@@ -232,56 +169,19 @@ Game.prototype.setup = function () {
     return true;
   }
     
-  function move(dir) {
-    getPlayerContacts();
-    
-    if (!playerIsTouching()) {
-      return;
-    }
-    
-    var player = getPlayer();
-    var pos = player.GetPosition();
-    var _x = pos.x;
-    var x2 = 0;
-    var _y = pos.y;
-    var y2 = 0;
-    
-    var movementAmount = 2 * player.GetMass();
-    
-    if (dir == "left") {
-      _x -= movementAmount;
-      x2 = -movementAmount;
-    } else
-    if (dir == "right") {
-      _x += movementAmount;
-      x2 = movementAmount;
-    } else {
-      _y -= movementAmount;
-      y2 = -movementAmount;
-    }
-    
-    player.ApplyImpulse({x: x2, y: y2}, player.GetWorldCenter());
-    
-    player.SetAngularVelocity(0);
-    player.SetAngle(0);
-  }
-    
   function update() {
-    var player = getPlayer();
-    
-    player.SetAngularVelocity(0);
-    player.SetAngle(0);
+    //game.player.process();
     
     if (movementJoint) {
       game.world.DestroyJoint(movementJoint);
       movementJoint = null;
     }
-      
+    
     if (keyIsDown(Keys.LEFT)) {
-      move("left");
+      game.player.move("left");
     } else
     if (keyIsDown(Keys.RIGHT)) {
-      move("right");
+      game.player.move("right");
     } else {
       if (movementJoint) {
         game.world.DestroyJoint(movementJoint);
@@ -320,7 +220,7 @@ Game.prototype.setup = function () {
     for (b = game.world.GetBodyList(); b; b = b.GetNext()) {
       if (b.GetType() == b2Body.b2_dynamicBody) {
         var pos = b.GetPosition();
-          
+        
         /** /
         if (pos.x < -2 || pos.x > width) {
             
@@ -331,7 +231,7 @@ Game.prototype.setup = function () {
 
         }
         /**/
-          
+        
         var data = b.GetUserData();
         if (data && data.image) {
           game.context.save();
@@ -342,32 +242,12 @@ Game.prototype.setup = function () {
         }
       }
     }
-      
+    game.player.render();
+    
     requestAnimFrame(update);
   };
-         
+  
   //helpers
-         
-  //http://js-tut.aardon.de/js-tut/tutorial/position.html
-  function getElementPosition(element) {
-    var elem=element, tagname="", x=0, y=0;
-           
-    while((typeof(elem) == "object") && (typeof(elem.tagName) != "undefined")) {
-      y += elem.offsetTop;
-      x += elem.offsetLeft;
-      tagname = elem.tagName.toUpperCase();
-      
-      if(tagname == "BODY")
-        elem=0;
-      
-      if(typeof(elem) == "object") {
-        if(typeof(elem.offsetParent) == "object")
-          elem = elem.offsetParent;
-      }
-    }
-    
-    return {x: x, y: y};
-  }
    
   function wakeAllBody() {
     for (b = game.world.GetBodyList() ; b; b = b.GetNext()) {
@@ -439,7 +319,7 @@ var Keys = {
   OPTION: 18,
   BACKSPACE: 8
 };
-  
+
 var keysDown = {};
 var captureKeys = {};
 function onKeyDown (event) {
